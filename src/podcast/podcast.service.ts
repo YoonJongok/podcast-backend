@@ -2,57 +2,61 @@ import { UpdatePodcastDto } from './dtos/update-podcast.dto';
 import { Injectable } from '@nestjs/common';
 import { CreatePodcastDto } from './dtos/create-podcast.dto';
 import { Podcast } from './entities/podcast.entities';
+import { CoreOutput } from './dtos/output.dto';
+import { PodcastOutput } from './dtos/podcast.dto';
 
 @Injectable()
 export class PodcastService {
-  private podcasts: Podcast[];
+  private podcasts: Podcast[] = [];
 
-  getAllPodcasts(): { podcasts: Podcast[]; error: string | null } {
-    return { podcasts: this.podcasts, error: null };
+  getAllPodcasts(): Podcast[] {
+    return this.podcasts;
   }
 
-  createPodcast({ title, category }: CreatePodcastDto): {
-    id: number;
-    error: string | null;
-  } {
+  createPodcast({ title, category }: CreatePodcastDto): CoreOutput {
     const id = Date.now();
     this.podcasts.push({ id, title, category, rating: 0, episodes: [] });
-    return { id, error: null };
+    return {
+      ok: true,
+    };
   }
 
-  getPodcast(id: string): { podcast: Podcast | null; error: string | null } {
+  getPodcast(id: number): PodcastOutput {
     const podcast = this.podcasts.filter((pod) => pod.id === +id);
     if (podcast.length === 0) {
-      return { podcast: null, error: 'Podcast not found' };
+      return { ok: false, error: 'Podcast not found' };
     }
     if (podcast.length === 1) {
-      return { podcast: podcast[0], error: null };
+      return { ok: true, podcast: podcast[0] };
     }
     if (podcast.length > 1) {
       return {
-        podcast: null,
+        ok: false,
         error: 'There is more than one podcasts with same id',
       };
     }
   }
-  deletePodcast(id: string): { error: string | null } {
+  deletePodcast(id: number): CoreOutput {
+    const { ok, error } = this.getPodcast(id);
+    if (!ok) {
+      return {
+        ok: false,
+        error,
+      };
+    }
     this.podcasts = this.podcasts.filter((pod) => pod.id !== +id);
-    return { error: null };
+    return { ok: true };
   }
 
-  updatePodcast(
-    id: string,
-    updatePodcastDto: UpdatePodcastDto,
-  ): { error: string | null } {
-    const { podcast, error: findError } = this.getPodcast(id);
-    if (findError) {
-      return { error: findError };
+  updatePodcast(updatePodcastDto: UpdatePodcastDto): PodcastOutput {
+    const { ok, error, podcast } = this.getPodcast(updatePodcastDto.id);
+    if (!ok) {
+      return { ok: false, error };
     }
-    const { error: deleteError } = this.deletePodcast(id);
-    if (deleteError) {
-      return { error: deleteError };
-    }
+    this.podcasts = this.podcasts.filter(
+      (pod) => pod.id !== updatePodcastDto.id,
+    );
     this.podcasts.push({ ...podcast, ...updatePodcastDto });
-    return { error: null };
+    return { ok: true };
   }
 }

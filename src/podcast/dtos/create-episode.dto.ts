@@ -1,5 +1,5 @@
-import { ArgsType } from '@nestjs/graphql';
+import { InputType } from '@nestjs/graphql';
 import { CreatePodcastDto } from './create-podcast.dto';
 
-@ArgsType()
+@InputType()
 export class CreateEpisodeDto extends CreatePodcastDto {}

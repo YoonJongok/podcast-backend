@@ -1,6 +1,6 @@
-import { ArgsType } from '@nestjs/graphql';
+import { InputType } from '@nestjs/graphql';
 
-@ArgsType()
+@InputType()
 export class UpdateEpisodeDto {
   title?: string;
   category?: string;
