@@ -1,4 +1,4 @@
-import { UpdatePodcastDto } from './dtos/update-podcast.dto';
+import { UpdatePodcastInput } from './dtos/update-podcast.dto';
 import { Injectable } from '@nestjs/common';
 import {
   CreatePodcastInput,
@@ -6,7 +6,11 @@ import {
 } from './dtos/create-podcast.dto';
 import { Podcast } from './entities/podcast.entities';
 import { CoreOutput } from './dtos/output.dto';
-import { GetAllPodcastsOutput, PodcastOutput } from './dtos/podcast.dto';
+import {
+  GetAllPodcastsOutput,
+  PodcastOutput,
+  PodcastSearchInput,
+} from './dtos/podcast.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Episode } from './entities/episode.entities';
@@ -69,27 +73,46 @@ export class PodcastService {
       return this.InternalServerErrorOutput;
     }
   }
-  // deletePodcast(id: number): CoreOutput {
-  //   const { ok, error } = this.getPodcast(id);
-  //   if (!ok) {
-  //     return {
-  //       ok: false,
-  //       error,
-  //     };
-  //   }
-  //   this.podcasts = this.podcasts.filter((pod) => pod.id !== +id);
-  //   return { ok: true };
-  // }
+  async deletePodcast(id: number): Promise<CoreOutput> {
+    try {
+      const { ok, error } = await this.getPodcast(id);
+      if (!ok) {
+        return {
+          ok,
+          error,
+        };
+      }
+      await this.podcastRepository.delete(id);
+      return { ok: true };
+    } catch (error) {
+      return this.InternalServerErrorOutput;
+    }
+  }
 
-  // updatePodcast(updatePodcastDto: UpdatePodcastDto): PodcastOutput {
-  //   const { ok, error, podcast } = this.getPodcast(updatePodcastDto.id);
-  //   if (!ok) {
-  //     return { ok: false, error };
-  //   }
-  //   this.podcasts = this.podcasts.filter(
-  //     (pod) => pod.id !== updatePodcastDto.id,
-  //   );
-  //   this.podcasts.push({ ...podcast, ...updatePodcastDto });
-  //   return { ok: true };
-  // }
+  async updatePodcast({
+    id,
+    payload,
+  }: UpdatePodcastInput): Promise<PodcastOutput> {
+    try {
+      const { ok, error, podcast } = await this.getPodcast(id);
+      if (!ok) {
+        return { ok, error };
+      }
+      if (payload.rating !== null) {
+        if (payload.rating < 1 || payload.rating > 5) {
+          return {
+            ok: false,
+            error: 'Rating must be between 1 and 5.',
+          };
+        }
+      }
+      const updatedPodcast: Podcast = { ...podcast, ...payload };
+      await this.podcastRepository.save(updatedPodcast);
+      return {
+        ok: true,
+      };
+    } catch (error) {
+      return this.InternalServerErrorOutput;
+    }
+  }
 }

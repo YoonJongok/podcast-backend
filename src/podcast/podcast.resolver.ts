@@ -1,3 +1,4 @@
+import { UpdatePodcastInput } from './dtos/update-podcast.dto';
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import {
   CreatePodcastInput,
@@ -9,7 +10,7 @@ import {
   PodcastOutput,
   PodcastSearchInput,
 } from './dtos/podcast.dto';
-import { UpdatePodcastDto } from './dtos/update-podcast.dto';
+
 import { Podcast } from './entities/podcast.entities';
 import { PodcastService } from './podcast.service';
 
@@ -36,15 +37,15 @@ export class PodcastResolver {
     return this.podcastService.getPodcast(podcastSearchInput.id);
   }
 
-  // @Mutation((returns) => CoreOutput)
-  // deletePodcast(@Args('input') podcastSearchInput: PodcastSearchInput) {
-  //   return this.podcastService.deletePodcast(podcastSearchInput.id);
-  // }
+  @Mutation((returns) => CoreOutput)
+  deletePodcast(@Args('input') podcastSearchInput: PodcastSearchInput) {
+    return this.podcastService.deletePodcast(podcastSearchInput.id);
+  }
 
-  // @Mutation((returns) => PodcastOutput)
-  // updatePodcast(@Args('input') updatePodcastDto: UpdatePodcastDto) {
-  //   return this.podcastService.updatePodcast(updatePodcastDto);
-  // }
+  @Mutation((returns) => PodcastOutput)
+  updatePodcast(@Args('input') updatePodcastInput: UpdatePodcastInput) {
+    return this.podcastService.updatePodcast(updatePodcastInput);
+  }
   // getAllEpisodes()
   // createEpisode()
   // updateEpisodes()
