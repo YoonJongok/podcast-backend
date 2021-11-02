@@ -1,4 +1,4 @@
-import { CoreOutput } from './output.dto';
+import { CoreOutput } from '../../common/dtos/output.dto';
 import { Field, InputType, Int, PickType, ObjectType } from '@nestjs/graphql';
 import { IsInt } from 'class-validator';
 import { Episode } from '../entities/episode.entities';

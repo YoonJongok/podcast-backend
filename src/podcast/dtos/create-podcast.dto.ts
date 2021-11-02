@@ -1,7 +1,7 @@
 import { Podcast } from './../entities/podcast.entities';
 import { Field, InputType, ObjectType, PickType, Int } from '@nestjs/graphql';
 import { IsString } from 'class-validator';
-import { CoreOutput } from './output.dto';
+import { CoreOutput } from '../../common/dtos/output.dto';
 
 @InputType()
 export class CreatePodcastInput extends PickType(

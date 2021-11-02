@@ -8,6 +8,8 @@ import { AppService } from './app.service';
 import { PodcastModule } from './podcast/podcast.module';
 import { Podcast } from './podcast/entities/podcast.entities';
 import { Episode } from './podcast/entities/episode.entities';
+import { UsersModule } from './users/users.module';
+import { User } from './users/entities/user.entities';
 
 @Module({
   imports: [
@@ -31,12 +33,13 @@ import { Episode } from './podcast/entities/episode.entities';
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
-      entities: [Podcast, Episode],
+      entities: [Podcast, Episode, User],
       synchronize: true,
       logging: false,
     }),
     GraphQLModule.forRoot({ autoSchemaFile: true }),
     PodcastModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

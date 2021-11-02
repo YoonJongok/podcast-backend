@@ -1,6 +1,6 @@
 import { Podcast } from './../entities/podcast.entities';
 import { Field, ObjectType, PickType, InputType, Int } from '@nestjs/graphql';
-import { CoreOutput } from './output.dto';
+import { CoreOutput } from '../../common/dtos/output.dto';
 import { IsInt, IsNumber, IsOptional } from 'class-validator';
 import { Episode } from '../entities/episode.entities';
 

@@ -1,7 +1,7 @@
 import { Column, Entity, OneToMany } from 'typeorm';
 import { Field, ObjectType } from '@nestjs/graphql';
 import { Episode } from './episode.entities';
-import { CoreEntity } from './core.entities';
+import { CoreEntity } from '../../common/entities/core.entities';
 import { IsNumber, IsString, Max, Min } from 'class-validator';
 
 @Entity()
