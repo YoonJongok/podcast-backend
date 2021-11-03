@@ -2,14 +2,18 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { object } from 'joi';
 import { Repository } from 'typeorm';
+import { JwtService } from '../jwt/jwt.service';
 import { CreateUserInput, CreateUserOutput } from './dtos/create-user.dto';
+import { EditProfileInput, EditProfileOutput } from './dtos/edit-profile.dto';
 import { LoginInput, LoginOutput } from './dtos/login.dto';
+import { UserProfileInput, UserProfileOutput } from './dtos/see-profile.dto';
 import { User } from './entities/user.entities';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User) private readonly usersRepository: Repository<User>,
+    private readonly jwtService: JwtService,
   ) {}
   private InternalServerError = {
     ok: false,
@@ -25,6 +29,7 @@ export class UsersService {
 
   async createUser({
     email,
+    username,
     password,
     role,
   }: CreateUserInput): Promise<CreateUserOutput> {
@@ -33,7 +38,13 @@ export class UsersService {
       if (exist) {
         return this.ExistInDatabaseError('Email');
       }
-      const newUser = this.usersRepository.create({ email, password, role });
+      const newUser = this.usersRepository.create({
+        email,
+        username,
+        password,
+        role,
+      });
+
       const { id } = await this.usersRepository.save(newUser);
 
       return {
@@ -41,6 +52,7 @@ export class UsersService {
         id,
       };
     } catch (error) {
+      console.log(error);
       return this.InternalServerError;
     }
   }
@@ -62,9 +74,54 @@ export class UsersService {
           error: 'Wrong password',
         };
       }
+      const token = this.jwtService.sign(user.id);
+
       return {
         ok: true,
-        // token
+        token,
+      };
+    } catch (error) {
+      return this.InternalServerError;
+    }
+  }
+
+  async findUserById(userId: number): Promise<UserProfileOutput> {
+    try {
+      const user = await this.usersRepository.findOne(userId);
+      if (!user) {
+        return {
+          ok: false,
+          error: 'User not found.',
+        };
+      }
+      return {
+        ok: true,
+        user,
+      };
+    } catch (error) {
+      return this.InternalServerError;
+    }
+  }
+
+  async editProfile(
+    userId: number,
+    { email, username, password }: EditProfileInput,
+  ): Promise<EditProfileOutput> {
+    try {
+      const { ok, error, user } = await this.findUserById(userId);
+      if (!ok) {
+        return {
+          ok,
+          error,
+        };
+      }
+      if (email) user.email = email;
+      if (username) user.username = username;
+      if (password) user.password = password;
+
+      await this.usersRepository.save(user);
+      return {
+        ok: true,
       };
     } catch (error) {
       return this.InternalServerError;

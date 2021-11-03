@@ -1,6 +1,11 @@
+import { UseGuards } from '@nestjs/common';
 import { Args, Mutation, Resolver, Query } from '@nestjs/graphql';
+import { AuthUser } from '../auth/auth-user.decorator';
+import { AuthGuard } from '../auth/auth.guard';
 import { CreateUserInput, CreateUserOutput } from './dtos/create-user.dto';
+import { EditProfileInput, EditProfileOutput } from './dtos/edit-profile.dto';
 import { LoginOutput, LoginInput } from './dtos/login.dto';
+import { UserProfileInput, UserProfileOutput } from './dtos/see-profile.dto';
 import { User } from './entities/user.entities';
 import { UsersService } from './users.service';
 
@@ -18,5 +23,28 @@ export class UsersResolver {
   @Mutation((returns) => LoginOutput)
   login(@Args('input') loginInput: LoginInput): Promise<LoginOutput> {
     return this.usersService.login(loginInput);
+  }
+
+  @UseGuards(AuthGuard)
+  @Query((returns) => User)
+  me(@AuthUser() authUser: User) {
+    return authUser;
+  }
+
+  @UseGuards(AuthGuard)
+  @Query((returns) => UserProfileOutput)
+  seeProfile(
+    @Args() userProfileInput: UserProfileInput,
+  ): Promise<UserProfileOutput> {
+    return this.usersService.findUserById(userProfileInput.userId);
+  }
+
+  @UseGuards(AuthGuard)
+  @Mutation((returns) => EditProfileOutput)
+  editProfile(
+    @AuthUser() owner: User,
+    @Args('input') editProfileInput: EditProfileInput,
+  ): Promise<EditProfileOutput> {
+    return this.usersService.editProfile(owner.id, editProfileInput);
   }
 }
