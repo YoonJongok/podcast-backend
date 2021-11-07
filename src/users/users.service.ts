@@ -20,13 +20,6 @@ export class UsersService {
     error: 'Internal server Error occured',
   };
 
-  private ExistInDatabaseError = (varName) => {
-    return {
-      ok: false,
-      error: `${varName} already exist`,
-    };
-  };
-
   async createUser({
     email,
     username,
@@ -34,9 +27,12 @@ export class UsersService {
     role,
   }: CreateUserInput): Promise<CreateUserOutput> {
     try {
-      const exist = await this.usersRepository.findOne({ where: { email } });
+      const exist = await this.usersRepository.findOne(email);
       if (exist) {
-        return this.ExistInDatabaseError('Email');
+        return {
+          ok: false,
+          error: `Email already exist`,
+        };
       }
       const newUser = this.usersRepository.create({
         email,
@@ -52,7 +48,6 @@ export class UsersService {
         id,
       };
     } catch (error) {
-      console.log(error);
       return this.InternalServerError;
     }
   }
