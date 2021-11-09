@@ -27,7 +27,7 @@ export class UsersService {
     role,
   }: CreateUserInput): Promise<CreateUserOutput> {
     try {
-      const exist = await this.usersRepository.findOne(email);
+      const exist = await this.usersRepository.findOne({ where: { email } });
       if (exist) {
         return {
           ok: false,
@@ -48,7 +48,11 @@ export class UsersService {
         id,
       };
     } catch (error) {
-      return this.InternalServerError;
+      console.log(error);
+      return {
+        ok: false,
+        error,
+      };
     }
   }
 
