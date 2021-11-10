@@ -3,7 +3,15 @@ import {
   CreateEpisodeOutput,
 } from './dtos/create-episode.dto';
 import { UpdatePodcastInput } from './dtos/update-podcast.dto';
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import {
+  Args,
+  Int,
+  Mutation,
+  Parent,
+  Query,
+  ResolveField,
+  Resolver,
+} from '@nestjs/graphql';
 import {
   CreatePodcastInput,
   CreatePodcastOutput,
@@ -22,21 +30,31 @@ import { Podcast } from './entities/podcast.entities';
 import { PodcastService } from './podcast.service';
 import { Episode } from './entities/episode.entities';
 import { UpdateEpisodeInput } from './dtos/update-episode.dto';
+import { AuthUser } from '../auth/auth-user.decorator';
+import { User } from '../users/entities/user.entities';
+import { Role } from '../auth/role.decorator';
 
 @Resolver((of) => Podcast)
 export class PodcastResolver {
   constructor(private readonly podcastService: PodcastService) {}
+
+  @ResolveField((type) => Int)
+  episodeCount(@Parent() podcast: Podcast): Promise<number> {
+    return this.podcastService.countEpisodes(podcast);
+  }
 
   @Query((returns) => GetAllPodcastsOutput)
   getAllPodcasts(): Promise<GetAllPodcastsOutput> {
     return this.podcastService.getAllPodcasts();
   }
 
+  @Role(['Any'])
   @Mutation((returns) => CreatePodcastOutput)
   createPodcast(
-    @Args('input') createPodcastDto: CreatePodcastInput,
+    @AuthUser() owner: User,
+    @Args('input') createPodcastInput: CreatePodcastInput,
   ): Promise<CreatePodcastOutput> {
-    return this.podcastService.createPodcast(createPodcastDto);
+    return this.podcastService.createPodcast(owner, createPodcastInput);
   }
 
   @Query((returns) => PodcastOutput)
@@ -46,14 +64,22 @@ export class PodcastResolver {
     return this.podcastService.getPodcast(podcastSearchInput.id);
   }
 
+  @Role(['Host'])
   @Mutation((returns) => CoreOutput)
-  deletePodcast(@Args('input') podcastSearchInput: PodcastSearchInput) {
-    return this.podcastService.deletePodcast(podcastSearchInput.id);
+  deletePodcast(
+    @AuthUser() owner: User,
+    @Args('input') podcastSearchInput: PodcastSearchInput,
+  ) {
+    return this.podcastService.deletePodcast(owner, podcastSearchInput.id);
   }
 
+  @Role(['Host'])
   @Mutation((returns) => PodcastOutput)
-  updatePodcast(@Args('input') updatePodcastInput: UpdatePodcastInput) {
-    return this.podcastService.updatePodcast(updatePodcastInput);
+  updatePodcast(
+    @AuthUser() owner: User,
+    @Args('input') updatePodcastInput: UpdatePodcastInput,
+  ) {
+    return this.podcastService.updatePodcast(owner, updatePodcastInput);
   }
 }
 
@@ -75,24 +101,32 @@ export class EpisodeResolver {
     return this.podcastService.getEpisode(episodeSearchInput);
   }
 
+  @Role(['Host'])
   @Mutation((returns) => CreateEpisodeOutput)
   createEpisode(
+    @AuthUser() owner: User,
     @Args('intput') createEpisodeInput: CreateEpisodeInput,
   ): Promise<CreateEpisodeOutput> {
-    return this.podcastService.createEpisode(createEpisodeInput);
+    return this.podcastService.createEpisode(owner, createEpisodeInput);
   }
 
+  @Role(['Host'])
   @Mutation((returns) => CoreOutput)
   updateEpisode(
+    @AuthUser() owner: User,
+
     @Args('input') updateEpisodeInput: UpdateEpisodeInput,
   ): Promise<CoreOutput> {
-    return this.podcastService.updateEpisode(updateEpisodeInput);
+    return this.podcastService.updateEpisode(owner, updateEpisodeInput);
   }
 
+  @Role(['Host'])
   @Mutation((returns) => CoreOutput)
   deleteEpisode(
+    @AuthUser() owner: User,
+
     @Args('input') episodeSearchInput: EpisodeSearchInput,
   ): Promise<CoreOutput> {
-    return this.podcastService.deleteEpisode(episodeSearchInput);
+    return this.podcastService.deleteEpisode(owner, episodeSearchInput);
   }
 }

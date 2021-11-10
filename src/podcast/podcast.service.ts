@@ -21,6 +21,7 @@ import {
   CreateEpisodeOutput,
 } from './dtos/create-episode.dto';
 import { UpdateEpisodeInput } from './dtos/update-episode.dto';
+import { User } from '../users/entities/user.entities';
 
 @Injectable()
 export class PodcastService {
@@ -47,12 +48,13 @@ export class PodcastService {
     }
   }
 
-  async createPodcast({
-    title,
-    category,
-  }: CreatePodcastInput): Promise<CreatePodcastOutput> {
+  async createPodcast(
+    owner: User,
+    { title, category }: CreatePodcastInput,
+  ): Promise<CreatePodcastOutput> {
     try {
       const newPodcast = this.podcastRepository.create({ title, category });
+      newPodcast.owner = owner;
       const { id } = await this.podcastRepository.save(newPodcast);
       return {
         ok: true,
@@ -83,13 +85,19 @@ export class PodcastService {
       return this.InternalServerErrorOutput;
     }
   }
-  async deletePodcast(id: number): Promise<CoreOutput> {
+  async deletePodcast(owner: User, id: number): Promise<CoreOutput> {
     try {
-      const { ok, error } = await this.getPodcast(id);
+      const { ok, error, podcast } = await this.getPodcast(id);
       if (!ok) {
         return {
           ok,
           error,
+        };
+      }
+      if (podcast.ownerId !== owner.id) {
+        return {
+          ok: false,
+          error: "You can't delete the podcast that you don't own ",
         };
       }
       await this.podcastRepository.delete(id);
@@ -99,14 +107,20 @@ export class PodcastService {
     }
   }
 
-  async updatePodcast({
-    id,
-    payload,
-  }: UpdatePodcastInput): Promise<PodcastOutput> {
+  async updatePodcast(
+    owner: User,
+    { id, payload }: UpdatePodcastInput,
+  ): Promise<PodcastOutput> {
     try {
       const { ok, error, podcast } = await this.getPodcast(id);
       if (!ok) {
         return { ok, error };
+      }
+      if (podcast.ownerId !== owner.id) {
+        return {
+          ok: false,
+          error: "You can't edit the podcast that you don't own ",
+        };
       }
       if (payload.rating !== null) {
         if (payload.rating < 1 || payload.rating > 5) {
@@ -120,6 +134,7 @@ export class PodcastService {
       await this.podcastRepository.save(updatedPodcast);
       return {
         ok: true,
+        podcast: updatedPodcast,
       };
     } catch (error) {
       return this.InternalServerErrorOutput;
@@ -167,15 +182,20 @@ export class PodcastService {
     }
   }
 
-  async createEpisode({
-    podcastId,
-    title,
-    category,
-  }: CreateEpisodeInput): Promise<CreateEpisodeOutput> {
+  async createEpisode(
+    owner: User,
+    { podcastId, title, category }: CreateEpisodeInput,
+  ): Promise<CreateEpisodeOutput> {
     try {
       const { ok, error, podcast } = await this.getPodcast(podcastId);
       if (!ok) {
         return { ok, error };
+      }
+      if (podcast.ownerId !== owner.id) {
+        return {
+          ok: false,
+          error: 'Only owner can create the episode',
+        };
       }
       const newEpisode = this.episodeRepository.create({ title, category });
       newEpisode.podcast = podcast;
@@ -189,12 +209,28 @@ export class PodcastService {
       return this.InternalServerErrorOutput;
     }
   }
-  async updateEpisode({
-    podcastId,
-    episodeId,
-    ...updatedValues
-  }: UpdateEpisodeInput): Promise<CoreOutput> {
+  async updateEpisode(
+    owner: User,
+    { podcastId, episodeId, ...updatedValues }: UpdateEpisodeInput,
+  ): Promise<CoreOutput> {
     try {
+      const {
+        ok: getPodcastOk,
+        error: getPodcastError,
+        podcast,
+      } = await this.getPodcast(podcastId);
+      if (!getPodcastOk) {
+        return {
+          ok: getPodcastOk,
+          error: getPodcastError,
+        };
+      }
+      if (podcast.ownerId !== owner.id) {
+        return {
+          ok: false,
+          error: "You can't edit the podcast's episode that you don't own ",
+        };
+      }
       const { ok, error, episode } = await this.getEpisode({
         podcastId,
         episodeId,
@@ -213,11 +249,28 @@ export class PodcastService {
     }
   }
 
-  async deleteEpisode({
-    episodeId,
-    podcastId,
-  }: EpisodeSearchInput): Promise<CoreOutput> {
+  async deleteEpisode(
+    owner: User,
+    { episodeId, podcastId }: EpisodeSearchInput,
+  ): Promise<CoreOutput> {
     try {
+      const {
+        ok: getPodcastOk,
+        error: getPodcastError,
+        podcast,
+      } = await this.getPodcast(podcastId);
+      if (!getPodcastOk) {
+        return {
+          ok: getPodcastOk,
+          error: getPodcastError,
+        };
+      }
+      if (podcast.ownerId !== owner.id) {
+        return {
+          ok: false,
+          error: "You can't delete the podcast's episode that you don't own ",
+        };
+      }
       const { ok, error, episode } = await this.getEpisode({
         podcastId,
         episodeId,
@@ -234,5 +287,8 @@ export class PodcastService {
       console.log(error);
       return this.InternalServerErrorOutput;
     }
+  }
+  async countEpisodes(podcast: Podcast): Promise<number> {
+    return this.episodeRepository.count({ podcast });
   }
 }
